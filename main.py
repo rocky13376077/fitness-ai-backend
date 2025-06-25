@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import openai
 import os
 from dotenv import load_dotenv
+from fastapi import Header, HTTPException
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -33,7 +34,14 @@ class PlanResponse(BaseModel):
     plan: str
 
 @app.post("/generate_plan", response_model=PlanResponse)
-def generate_plan(data: PlanRequest):
+def generate_plan(
+    data: PlanRequest,
+    api_key: str = Header(None)
+):
+    # API-KEY überprüfen
+    if api_key != os.getenv("API_SECRET"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     prompt = f"""
     Erstelle einen 7-tägigen Ernährungs- und Fitnessplan für folgende Person:
     Alter: {data.age}, Geschlecht: {data.gender}
@@ -44,4 +52,15 @@ def generate_plan(data: PlanRequest):
     Allergien: {data.allergies}
     Trainingshäufigkeit: {data.training_days}x pro Woche
     """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "Du bist ein professioneller Ernährungs- und Fitnesstrainer."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return {"plan": response.choices[0].message.content.strip()}
+
     
