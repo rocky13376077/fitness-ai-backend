@@ -38,7 +38,6 @@ def generate_plan(
     data: PlanRequest,
     api_key: str = Header(None)
 ):
-    # API-KEY überprüfen
     if api_key != os.getenv("API_SECRET"):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -61,6 +60,7 @@ def generate_plan(
         ]
     )
 
-    return {"plan": response.choices[0].message.content.strip()}
+    return PlanResponse(plan=response.choices[0].message.content.strip())
+
 
     
